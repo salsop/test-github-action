@@ -1,0 +1,37 @@
+name: 'Prisma Cloud Defender Install'
+description: 'Uses username, password, and hostname as inputs'
+inputs:
+  pc_user:
+    description: 'Prisma Cloud Username/Access Key ID'
+    required: true
+  pc_pass:
+    description: 'Prisma Cloud Password/Secret Key'
+    required: true
+  pc_console:
+    description: 'Prisma Cloud CWP Console URL (e.g. us-east1.cloud.twistlock.com/us-1-111573457)'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Prisma Cloud Defender
+      shell: bash
+      run: |
+        AUTH_PAYLOAD=$(cat <<EOF
+        {"username": "${{ inputs.pc_user }}", "password": "${{ inputs.pc_pass }}"}
+        EOF
+        )
+
+        # Get JWT Token
+        PRISMA_COMPUTE_API_AUTH_RESPONSE=$(curl --header "Content-Type: application/json" \
+                                                --request POST \
+                                                --data-raw "$AUTH_PAYLOAD" \
+                                                --url https://${{ inputs.pc_console }}/api/v1/authenticate )
+
+        TL_JWT=$(printf %s $PRISMA_COMPUTE_API_AUTH_RESPONSE | jq -r '.token')
+
+        # Get Short url without slash to allow defender connection
+        url="${{ inputs.pc_console }}"
+        console_url=$(echo "${url%%/*}")
+
+        # Download and install defender
+        curl -sSL -k --header "authorization: Bearer $TL_JWT" -X POST https://${{ inputs.pc_console }}/api/v1/scripts/defender.sh | sudo bash -s -- -c "$console_url" -d "none" -m

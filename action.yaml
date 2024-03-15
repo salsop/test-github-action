@@ -25,7 +25,7 @@ runs:
         PRISMA_COMPUTE_API_AUTH_RESPONSE=$(curl --header "Content-Type: application/json" \
                                                 --request POST \
                                                 --data-raw "$AUTH_PAYLOAD" \
-                                                --url https://${{ inputs.pc_console }}/api/v1/authenticate )
+                                                --url ${{ inputs.pc_console }}/api/v1/authenticate )
 
         TL_JWT=$(printf %s $PRISMA_COMPUTE_API_AUTH_RESPONSE | jq -r '.token')
 
@@ -34,4 +34,4 @@ runs:
         console_url=$(echo "${url%%/*}")
 
         # Download and install defender
-        curl -sSL -k --header "authorization: Bearer $TL_JWT" -X POST https://${{ inputs.pc_console }}/api/v1/scripts/defender.sh | sudo bash -s -- -c "$console_url" -d "none" -m
+        curl -sSL -k --header "authorization: Bearer $TL_JWT" -X POST ${{ inputs.pc_console }}/api/v1/scripts/defender.sh | sudo bash -s -- -c "$console_url" -d "none" -m
